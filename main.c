@@ -83,6 +83,8 @@ Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 "  -p                   Include PIDs in the window list. Very few\n" \
 "                       X applications support this feature.\n" \
 "  -G                   Include geometry in the window list.\n" \
+"  -x                   Include WM_CLASS in the window list or\n" \
+"                       interpret <WIN> as the WM_CLASS name.\n" \
 "  -u                   Override auto-detection and force UTF-8 mode.\n" \
 "  -F                   Modifies the behavior of the window title matching\n" \
 "                       algorithm. It will match only the full window title\n" \
@@ -105,9 +107,21 @@ Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 "                       number. If it starts with \"0x\", then\n" \
 "                       it will be interpreted as a hexadecimal number.\n" \
 "\n" \
+"                       The -x option may be used to interpret the argument\n" \
+"                       as a string, which is matched against the window's\n" \
+"                       class name (WM_CLASS property). Th first matching\n" \
+"                       window is used. The matching isn't case sensitive\n" \
+"                       and the string may appear in any position\n" \
+"                       of the class name. So it's recommended to  always use\n" \
+"                       the -F option in conjunction with the -x option.\n" \
+"\n" \
 "                       The special string \":SELECT:\" (without the quotes)\n" \
 "                       may be used to instruct wmctrl to let you select the\n" \
 "                       window by clicking on it.\n" \
+"\n" \
+"                       The special string \":ACTIVE:\" (without the quotes)\n" \
+"                       may be used to instruct wmctrl to use the currently\n" \
+"                       active window for the action.\n" \
 "\n" \
 "  <DESK>               A desktop number. Desktops are counted from zero.\n" \
 "\n" \
@@ -166,6 +180,7 @@ Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 #define MAX_PROPERTY_VALUE_LEN 4096
 #define SELECT_WINDOW_MAGIC ":SELECT:"
+#define ACTIVE_WINDOW_MAGIC ":ACTIVE:"
 
 #define p_verbose(...) if (options.verbose) { \
     fprintf(stderr, __VA_ARGS__); \
@@ -197,20 +212,25 @@ static int longest_str (gchar **strv);
 static int window_to_desktop (Display *disp, Window win, int desktop);
 static void window_set_title (Display *disp, Window win, char *str, char mode);
 static gchar *get_window_title (Display *disp, Window win);
+static gchar *get_window_class (Display *disp, Window win);
 static gchar *get_property (Display *disp, Window win, 
         Atom xa_prop_type, gchar *prop_name, unsigned long *size);
 static void init_charset(void);
 static int window_move_resize (Display *disp, Window win, char *arg);
 static int window_state (Display *disp, Window win, char *arg);
 static Window Select_Window(Display *dpy);
+static Window get_active_window(Display *dpy);
+
 /*}}}*/
    
 static struct {
     int verbose;
     int force_utf8;
+    int show_class;
     int show_pid;
     int show_geometry;
     int match_by_id;
+	int match_by_cls;
     int full_window_title_match;
     int wa_desktop_titles_invalid_utf8;
     char *param_window;
@@ -244,7 +264,7 @@ int main (int argc, char **argv) { /* {{{ */
         }
     }
    
-    while ((opt = getopt(argc, argv, "FGVvhlupidma:r:s:c:t:w:k:o:n:g:e:b:N:I:T:R:")) != -1) {
+    while ((opt = getopt(argc, argv, "FGVvhlupidmxa:r:s:c:t:w:k:o:n:g:e:b:N:I:T:R:")) != -1) {
         missing_option = 0;
         switch (opt) {
             case 'F':
@@ -262,6 +282,10 @@ int main (int argc, char **argv) { /* {{{ */
             case 'u':
                 options.force_utf8 = 1;
                 break;
+			case 'x':
+				options.match_by_cls = 1;
+				options.show_class = 1;
+				break;
             case 'p':
                 options.show_pid = 1;
                 break;
@@ -452,10 +476,12 @@ static gchar *get_output_str (gchar *str, gboolean is_utf8) {/*{{{*/
 static int wm_info (Display *disp) {/*{{{*/
     Window *sup_window = NULL;
     gchar *wm_name = NULL;
+    gchar *wm_class = NULL;
     unsigned long *wm_pid = NULL;
     unsigned long *showing_desktop = NULL;
     gboolean name_is_utf8 = TRUE;
     gchar *name_out;
+    gchar *class_out;
     
     if (! (sup_window = (Window *)get_property(disp, DefaultRootWindow(disp),
                     XA_WINDOW, "_NET_SUPPORTING_WM_CHECK", NULL))) {
@@ -478,6 +504,18 @@ static int wm_info (Display *disp) {/*{{{*/
     }
     name_out = get_output_str(wm_name, name_is_utf8);
   
+    /* WM_CLASS */
+    if (! (wm_class = get_property(disp, *sup_window,
+            XInternAtom(disp, "UTF8_STRING", False), "WM_CLASS", NULL))) {
+        name_is_utf8 = FALSE;
+        if (! (wm_class = get_property(disp, *sup_window,
+                XA_STRING, "WM_CLASS", NULL))) {
+            p_verbose("Cannot get class of the window manager (WM_CLASS).\n");
+        }
+    }
+    class_out = get_output_str(wm_class, name_is_utf8);
+  
+
     /* WM_PID */
     if (! (wm_pid = (unsigned long *)get_property(disp, *sup_window,
                     XA_CARDINAL, "_NET_WM_PID", NULL))) {
@@ -492,6 +530,7 @@ static int wm_info (Display *disp) {/*{{{*/
     
     /* print out the info */
     printf("Name: %s\n", name_out ? name_out : "N/A");
+    printf("Class: %s\n", class_out ? class_out : "N/A");
     
     if (wm_pid) {
         printf("PID: %lu\n", *wm_pid);
@@ -511,6 +550,7 @@ static int wm_info (Display *disp) {/*{{{*/
     g_free(name_out);
     g_free(sup_window);
     g_free(wm_name);
+	g_free(wm_class);
     g_free(wm_pid);
     g_free(showing_desktop);
     
@@ -904,17 +944,34 @@ static int action_window_str (Display *disp, char mode) {/*{{{*/
             return EXIT_FAILURE;
         }
     }
+    if (strcmp(ACTIVE_WINDOW_MAGIC, options.param_window) == 0) {
+        activate = get_active_window(disp);
+        if (activate)
+        {
+            return action_window(disp, activate, mode);
+        }
+        else
+        {
+            return EXIT_FAILURE;
+        }
+    }
     else {
         if ((client_list = get_client_list(disp, &client_list_size)) == NULL) {
             return EXIT_FAILURE; 
         }
         
-        for (i = 0; i < client_list_size / 4; i++) {
-            gchar *title_utf8 = get_window_title(disp, client_list[i]); /* UTF8 */
-            gchar *title_utf8_cf = NULL;
-            if (title_utf8) {
+        for (i = 0; i < client_list_size / sizeof(Window); i++) {
+ 			gchar *match_utf8;
+ 			if (options.show_class) {
+ 	            match_utf8 = get_window_class(disp, client_list[i]); /* UTF8 */
+ 			}
+ 			else {
+ 				match_utf8 = get_window_title(disp, client_list[i]); /* UTF8 */
+ 			}
+            if (match_utf8) {
                 gchar *match;
                 gchar *match_cf;
+                gchar *match_utf8_cf = NULL;
                 if (envir_utf8) {
                     match = g_strdup(options.param_window);
                     match_cf = g_utf8_casefold(options.param_window, -1);
@@ -930,21 +987,21 @@ static int action_window_str (Display *disp, char mode) {/*{{{*/
                     continue;
                 }
 
-                title_utf8_cf = g_utf8_casefold(title_utf8, -1);
+                match_utf8_cf = g_utf8_casefold(match_utf8, -1);
 
-                if ((options.full_window_title_match && strcmp(title_utf8, match) == 0) ||
-                        (!options.full_window_title_match && strstr(title_utf8_cf, match_cf))) {
+                if ((options.full_window_title_match && strcmp(match_utf8, match) == 0) ||
+                        (!options.full_window_title_match && strstr(match_utf8_cf, match_cf))) {
                     activate = client_list[i];
                     g_free(match);
                     g_free(match_cf);
-                    g_free(title_utf8);
-                    g_free(title_utf8_cf);
+                    g_free(match_utf8);
+                    g_free(match_utf8_cf);
                     break;
                 }
                 g_free(match);
                 g_free(match_cf);
-                g_free(title_utf8);
-                g_free(title_utf8_cf);
+                g_free(match_utf8);
+                g_free(match_utf8_cf);
             }
         }
         g_free(client_list);
@@ -1229,7 +1286,7 @@ static int list_windows (Display *disp) {/*{{{*/
     }
     
     /* find the longest client_machine name */
-    for (i = 0; i < client_list_size / 4; i++) {
+    for (i = 0; i < client_list_size / sizeof(Window); i++) {
         gchar *client_machine;
         if ((client_machine = get_property(disp, client_list[i],
                 XA_STRING, "WM_CLIENT_MACHINE", NULL))) {
@@ -1239,10 +1296,11 @@ static int list_windows (Display *disp) {/*{{{*/
     }
     
     /* print the list */
-    for (i = 0; i < client_list_size / 4; i++) {
+    for (i = 0; i < client_list_size / sizeof(Window); i++) {
         gchar *title_utf8 = get_window_title(disp, client_list[i]); /* UTF8 */
         gchar *title_out = get_output_str(title_utf8, TRUE);
         gchar *client_machine;
+        gchar *class_out = get_window_class(disp, client_list[i]); /* UTF8 */
         unsigned long *pid;
         unsigned long *desktop;
         int x, y, junkx, junky;
@@ -1264,7 +1322,7 @@ static int list_windows (Display *disp) {/*{{{*/
         pid = (unsigned long *)get_property(disp, client_list[i],
                 XA_CARDINAL, "_NET_WM_PID", NULL);
 
-	/* geometry */
+	    /* geometry */
         XGetGeometry (disp, client_list[i], &junkroot, &junkx, &junky,
                           &wwidth, &wheight, &bw, &depth);
         XTranslateCoordinates (disp, client_list[i], junkroot, junkx, junky,
@@ -1275,25 +1333,52 @@ static int list_windows (Display *disp) {/*{{{*/
         printf("0x%.8lx %-2ld", client_list[i], 
                 desktop ? (signed long)*desktop : 0);
         if (options.show_pid) {
-            printf(" %-6lu", pid ? *pid : 0);
-	}
+           printf(" %-6lu", pid ? *pid : 0);
+        }
         if (options.show_geometry) {
-	   printf(" %-4d %-4d %-4d %-4d", x, y, wwidth, wheight);
-	}
+           printf(" %-4d %-4d %-4d %-4d", x, y, wwidth, wheight);
+        }
+		if (options.show_class) {
+		   printf(" %-20s ", class_out ? class_out : "N/A");
+		}
+
         printf("%*s %s\n",
-                    max_client_machine_len,
-                    client_machine ? client_machine : "N/A",
-                    title_out ? title_out : "N/A"
-        );
+              max_client_machine_len,
+              client_machine ? client_machine : "N/A",
+              title_out ? title_out : "N/A"
+		);
         g_free(title_utf8);
         g_free(title_out);
         g_free(desktop);
         g_free(client_machine);
+        g_free(class_out);
         g_free(pid);
     }
     g_free(client_list);
    
     return EXIT_SUCCESS;
+}/*}}}*/
+
+static gchar *get_window_class (Display *disp, Window win) {/*{{{*/
+    gchar *class_utf8;
+    gchar *wm_class;
+    unsigned long size;
+
+    wm_class = get_property(disp, win, XA_STRING, "WM_CLASS", &size);
+    if (wm_class) {
+        gchar *p_0 = strchr(wm_class, '\0');
+        if (wm_class + size - 1 > p_0) {
+            *(p_0) = '.';
+        }
+        class_utf8 = g_locale_to_utf8(wm_class, -1, NULL, NULL, NULL);
+    }
+    else {
+        class_utf8 = NULL;
+    }
+
+    g_free(wm_class);
+    
+    return class_utf8;
 }/*}}}*/
 
 static gchar *get_window_title (Display *disp, Window win) {/*{{{*/
@@ -1336,6 +1421,11 @@ static gchar *get_property (Display *disp, Window win, /*{{{*/
     
     xa_prop_name = XInternAtom(disp, prop_name, False);
     
+    /* MAX_PROPERTY_VALUE_LEN / 4 explanation (XGetWindowProperty manpage):
+     *
+     * long_length = Specifies the length in 32-bit multiples of the
+     *               data to be retrieved.
+     */
     if (XGetWindowProperty(disp, win, xa_prop_name, 0, MAX_PROPERTY_VALUE_LEN / 4, False,
             xa_prop_type, &xa_ret_type, &ret_format,     
             &ret_nitems, &ret_bytes_after, &ret_prop) != Success) {
@@ -1418,4 +1508,20 @@ static Window Select_Window(Display *dpy) {/*{{{*/
     
     return(target_win);
 }/*}}}*/
+
+static Window get_active_window(Display *disp) {/*{{{*/
+    char *prop;
+    unsigned long size;
+    Window ret = (Window)0;
+    
+    prop = get_property(disp, DefaultRootWindow(disp), XA_WINDOW, 
+                        "_NET_ACTIVE_WINDOW", &size);
+    if (prop) {
+        ret = *((Window*)prop);
+        g_free(prop);
+    }
+
+    return(ret);
+}/*}}}*/
+
 

@@ -1,4 +1,20 @@
 
+03 Jan 2005  Tomas Styblo  <tripie@cpan.org>
+  * 1.06 released
+
+03 Jan 2005  Christian V. J. Brüssow <cvjb@cvjb.de>
+  * added support for WM_CLASS
+
+03 Jan 2005  Jack Erwin <jerwin@jabber.com>
+  * added the ability to address the currently active window (:ACTIVE:)
+
+03 Jan 2005  Mads Martin Joergensen <mmj@suse.de>
+  * added support for 64-bit environments
+
+03 Jan 2005  Shyamal Prasad <shyamalprasad@verizon.net>
+  * provided a wmctrl(1) manpage
+
+
 05 Jan 2004  Tomas Styblo  <tripie@cpan.org>
   * Fixed some typos in --help
   * 1.05 released
