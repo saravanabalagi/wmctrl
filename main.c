@@ -161,6 +161,7 @@ Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 }
 
 /* declarations of static functions *//*{{{*/
+static gboolean wm_supports (Display *disp, const gchar *prop);
 static Window *get_client_list (Display *disp, unsigned long *size);
 static int client_msg(Display *disp, Window win, char *msg, 
         unsigned long data0, unsigned long data1, 
@@ -615,8 +616,11 @@ static int activate_window (Display *disp, Window win, /* {{{ */
         g_free(desktop);
     }
 
-    return client_msg(disp, win, "_NET_ACTIVE_WINDOW", 
+    client_msg(disp, win, "_NET_ACTIVE_WINDOW", 
             0, 0, 0, 0, 0);
+    XMapRaised(disp, win);
+
+    return EXIT_SUCCESS;
 }/*}}}*/
 
 static int close_window (Display *disp, Window win) {/*{{{*/
@@ -694,6 +698,29 @@ static int window_state (Display *disp, Window win, char *arg) {/*{{{*/
     }
 }/*}}}*/
 
+static gboolean wm_supports (Display *disp, const gchar *prop) {/*{{{*/
+    Atom xa_prop = XInternAtom(disp, prop, False);
+    Atom *list;
+    unsigned long size;
+    int i;
+
+    if (! (list = (Atom *)get_property(disp, DefaultRootWindow(disp),
+            XA_ATOM, "_NET_SUPPORTED", &size))) {
+        p_verbose("Cannot get _NET_SUPPORTED property.\n");
+        return FALSE;
+    }
+
+    for (i = 0; i < size / sizeof(Atom); i++) {
+        if (list[i] == xa_prop) {
+            g_free(list);
+            return TRUE;
+        }
+    }
+    
+    g_free(list);
+    return FALSE;
+}/*}}}*/
+
 static int window_move_resize (Display *disp, Window win, char *arg) {/*{{{*/
     signed long grav, x, y, w, h;
     unsigned long grflags;
@@ -721,9 +748,24 @@ static int window_move_resize (Display *disp, Window win, char *arg) {/*{{{*/
     if (h != -1) grflags |= (1 << 11);
    
     p_verbose("grflags: %lu\n", grflags);
-    
-    return client_msg(disp, win, "_NET_MOVERESIZE_WINDOW", 
-        grflags, (unsigned long)x, (unsigned long)y, (unsigned long)w, (unsigned long)h);
+   
+    if (wm_supports(disp, "_NET_MOVERESIZE_WINDOW")){
+        return client_msg(disp, win, "_NET_MOVERESIZE_WINDOW", 
+            grflags, (unsigned long)x, (unsigned long)y, (unsigned long)w, (unsigned long)h);
+    }
+    else {
+        p_verbose("WM doesn't support _NET_MOVERESIZE_WINDOW. Gravity will be ignored.\n");
+        if ((w < 1 || h < 1) && (x >= 0 && y >= 0)) {
+            XMoveWindow(disp, win, x, y);
+        }
+        else if ((x < 0 || y < 0) && (w >= 1 && h >= -1)) {
+            XResizeWindow(disp, win, w, h);
+        }
+        else if (x >= 0 && y >= 0 && w >= 1 && h >= 1) {
+            XMoveResizeWindow(disp, win, x, y, w, h);
+        }
+        return EXIT_SUCCESS;
+    }
 }/*}}}*/
 
 static int action_window (Display *disp, Window win, char mode) {/*{{{*/
@@ -940,10 +982,14 @@ static int list_desktops (Display *disp) {/*{{{*/
         else {
             /* seperate values for desktops of different size */
             p_verbose("WM provides separate _NET_DESKTOP_GEOMETRY value for each desktop.\n");
-            for (i = 0; i < *num_desktops && 
-                    i < desktop_geometry_size / sizeof(*desktop_geometry) / 2; i++) {
-                desktop_geometry_str[i] = g_strdup_printf("%lux%lu", 
-                desktop_geometry[i*2], desktop_geometry[i*2+1]);
+            for (i = 0; i < *num_desktops; i++) {
+                if (i < desktop_geometry_size / sizeof(*desktop_geometry) / 2) {
+                    desktop_geometry_str[i] = g_strdup_printf("%lux%lu", 
+                        desktop_geometry[i*2], desktop_geometry[i*2+1]);
+                }
+                else {
+                    desktop_geometry_str[i] = g_strdup("N/A");
+                }
             }
         }
     }
@@ -971,10 +1017,14 @@ static int list_desktops (Display *disp) {/*{{{*/
         }
         else {
             /* seperate values for each of desktops */
-            for (i = 0; i < *num_desktops && 
-                    i < desktop_viewport_size / sizeof(*desktop_viewport) / 2; i++) {
-                desktop_viewport_str[i] = g_strdup_printf("%lu,%lu", 
-                desktop_viewport[i*2], desktop_viewport[i*2+1]);
+            for (i = 0; i < *num_desktops; i++) {
+                if (i < desktop_viewport_size / sizeof(*desktop_viewport) / 2) {
+                    desktop_viewport_str[i] = g_strdup_printf("%lu,%lu", 
+                        desktop_viewport[i*2], desktop_viewport[i*2+1]);
+                }
+                else {
+                    desktop_viewport_str[i] = g_strdup("N/A");
+                }
             }
         }
     }
@@ -1003,11 +1053,15 @@ static int list_desktops (Display *disp) {/*{{{*/
         }
         else {
             /* seperate values for each of desktops */
-            for (i = 0; i < *num_desktops && 
-                    i < desktop_workarea_size / sizeof(*desktop_workarea) / 4; i++) {
-                desktop_workarea_str[i] = g_strdup_printf("%lu,%lu %lux%lu", 
-                desktop_workarea[i*4], desktop_workarea[i*4+1],
-                desktop_workarea[i*4+2], desktop_workarea[i*4+3]);
+            for (i = 0; i < *num_desktops; i++) {
+                if (i < desktop_workarea_size / sizeof(*desktop_workarea) / 4) {
+                    desktop_workarea_str[i] = g_strdup_printf("%lu,%lu %lux%lu", 
+                        desktop_workarea[i*4], desktop_workarea[i*4+1],
+                        desktop_workarea[i*4+2], desktop_workarea[i*4+3]);
+                }
+                else {
+                    desktop_workarea_str[i] = g_strdup("N/A");
+                }
             }
         }
     }

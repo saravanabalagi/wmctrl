@@ -69,27 +69,11 @@ The program is based on the EWMH specification:
     http://www.freedesktop.org/standards/wm-spec/
 
 Please note that wmctrl only works with window managers which implement
-this specification. wmctrl is known to work at least with the following
-window managers:
+this specification.
 
-    icewm
-    kwin (the default WM from KDE)
-    metacity (the default WM from GNOME)
-    openbox >= 3
-    sawfish
-    fvwm >= 2.5
-    waimea
-    pekwm
-    enlightenment >= 0.16.6
+The homepage of wmctrl:
 
-
-The following window managers are not supported yet. Their 
-EWMH implementation is either non-existent, incomplete or buggy:
-
-    window maker 0.80.2
-    fluxbox 0.1.14
-    blackbox 0.65.0
-
+    http://sweb.cz/tripie/utils/wmctrl/
 
 Author, current maintainer: Tomas Styblo <tripie@cpan.org>
 Copyright (C) 2003

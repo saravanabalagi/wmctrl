@@ -1,5 +1,14 @@
 
 20 Sep 2003  Tomas Styblo  <tripie@cpan.org>
+  * 1.03 released
+
+20 Sep 2003  Tomas Styblo  <tripie@cpan.org>
+  * fallback to xlib functions when the WM doesn't support
+    _NET_MOVERESIZE_WINDOW => better compatibility
+  * changes in the "activate window" function for better compat.
+
+
+20 Sep 2003  Tomas Styblo  <tripie@cpan.org>
   * 1.02 released
 
 19 Sep 2003  Tomas Styblo  <tripie@cpan.org>
