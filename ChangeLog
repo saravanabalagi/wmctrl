@@ -1,3 +1,12 @@
 
+16 Sep 2003  Tomas Styblo  <tripie@cpan.org>
+  * 1.01 released
+
+16 Sep 2003  Sergey Pinaev  <dfo@antex.ru>
+  * i18n fixes
+  * fixed warnings with g_ascii_strup and nonexistent env's
+  * fixed desktop IDs of omnipresent windows (-1) in the window list
+  * workaround for non-ascii desktop titles with Window Maker
+
 15 Sep 2003  Tomas Styblo  <tripie@cpan.org>
   * Initial release.

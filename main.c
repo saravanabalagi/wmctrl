@@ -29,6 +29,7 @@ Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <locale.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <glib.h>
@@ -55,6 +56,8 @@ Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 "                       X applications support this feature.\n" \
 "  -u                   Override auto-detection and force UTF-8 mode.\n" \
 "  -v                   Be verbose. Useful for debugging.\n" \
+"  -w <WA>              Use a workaround. The option may appear multiple times.\n" \
+"                       The available workarounds are described below.\n" \
 "\n" \
 "Arguments:\n" \
 "  <WIN>                This argument specifies a window. By default it's\n" \
@@ -71,8 +74,13 @@ Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 "\n" \
 "  <DESK>               A desktop number. Desktops are counted from zero.\n" \
 "\n" \
+"Workarounds:\n" \
+"\n" \
+"  DESKTOP_TITLES_INVALID_UTF8      Print non-ascii desktop titles correctly\n" \
+"                                   when using Window Maker.\n" \
+"\n" \
 "Format of the window list:\n" \
-"(\"<WS>\" stands for any number of whitespace characters):\n" \
+"(\"<WS>\" stands for any number of whitespace characters.)\n" \
 "\n" \
 "  <window ID> <WS> <desktop ID> <WS> <client machine> <SPACE> <window title>\n" \
 "\n" \
@@ -115,11 +123,10 @@ static struct {
     int force_utf8;
     int show_pid;
     int match_by_id;
+    int wa_desktop_titles_invalid_utf8;
     char *param_window;
     char *param_desktop;
-} options = {
-    0, 0, 0, 0, NULL, NULL
-};
+} options;
 
 static gboolean envir_utf8;
 
@@ -130,6 +137,11 @@ int main (int argc, char **argv) { /* {{{ */
     int missing_option = 1;
     Display *disp;
 
+    memset(&options, 0, sizeof(options)); /* just for sure */
+    
+    /* necessary to make g_get_charset() and g_locale_*() work */
+    setlocale(LC_ALL, "");
+    
     /* make "--help" work. I don't want to use
      * getopt_long for portability reasons */
     if (argc == 2 && argv[1] && strcmp(argv[1], "--help") == 0) {
@@ -137,7 +149,7 @@ int main (int argc, char **argv) { /* {{{ */
         return EXIT_SUCCESS;
     }
    
-    while ((opt = getopt(argc, argv, "Vvhlupidma:r:s:c:t:")) != -1) {
+    while ((opt = getopt(argc, argv, "Vvhlupidma:r:s:c:t:w:")) != -1) {
         missing_option = 0;
         switch (opt) {
             case 'i':
@@ -163,8 +175,16 @@ int main (int argc, char **argv) { /* {{{ */
                 options.param_desktop = optarg;
                 action = opt;
                 break;
+            case 'w':
+                if (strcmp(optarg, "DESKTOP_TITLES_INVALID_UTF8") == 0) {
+                    options.wa_desktop_titles_invalid_utf8 = 1;
+                }
+                else {
+                    fprintf(stderr, "Unknown workaround: %s\n", optarg);
+                    return EXIT_FAILURE;
+                }
+                break;
             case '?':
-                fputs(HELP, stderr);
                 return EXIT_FAILURE;
             default:
                 action = opt;
@@ -219,8 +239,8 @@ int main (int argc, char **argv) { /* {{{ */
 
 static void init_charset () {/*{{{*/
     const gchar *charset; /* unused */
-    gchar *lang = g_ascii_strup(getenv("LANG"), -1);
-    gchar *lc_ctype = g_ascii_strup(getenv("LC_CTYPE"), -1);
+    gchar *lang = getenv("LANG") ? g_ascii_strup(getenv("LANG"), -1) : NULL; 
+    gchar *lc_ctype = getenv("LC_CTYPE") ? g_ascii_strup(getenv("LC_CTYPE"), -1) : NULL;
     
     /* this glib function doesn't work on my system ... */
     envir_utf8 = g_get_charset(&charset);
@@ -549,7 +569,8 @@ static int list_desktops (Display *disp) {/*{{{*/
         }
     }
 
-    if ((list = get_property(disp, root, 
+    if (options.wa_desktop_titles_invalid_utf8 || 
+            (list = get_property(disp, root, 
             XInternAtom(disp, "UTF8_STRING", False), 
             "_NET_DESKTOP_NAMES", &desktop_list_size)) == NULL) {
         names_are_utf8 = FALSE;
@@ -661,10 +682,12 @@ static int list_windows (Display *disp) {/*{{{*/
         /* pid */
         pid = (unsigned long *)get_property(disp, client_list[i],
                 XA_CARDINAL, "_NET_WM_PID", NULL);
-       
+      
+        /* special desktop ID -1 means "all desktops", so we 
+           have to convert the desktop value to signed long */
         if (options.show_pid) {
-            printf("0x%.8lx %-2lu %-6lu %*s %s\n", client_list[i], 
-                    desktop ? *desktop : 0,
+            printf("0x%.8lx %-2ld %-6lu %*s %s\n", client_list[i], 
+                    desktop ? (signed long)*desktop : 0,
                     pid ? *pid : 0,
                     max_client_machine_len,
                     client_machine ? client_machine : "N/A",
@@ -672,8 +695,8 @@ static int list_windows (Display *disp) {/*{{{*/
             );
         }
         else {
-            printf("0x%.8lx %-2lu %*s %s\n", client_list[i], 
-                    desktop ? *desktop : 0,
+            printf("0x%.8lx %-2ld %*s %s\n", client_list[i], 
+                    desktop ? (signed long)*desktop : 0,
                     max_client_machine_len,
                     client_machine ? client_machine : "N/A",
                     title_out ? title_out : "N/A"
