@@ -1508,7 +1508,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=wmctrl
- VERSION=1.01
+ VERSION=1.02
 
 
 cat >>confdefs.h <<_ACEOF
