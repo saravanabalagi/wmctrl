@@ -82,6 +82,7 @@ Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 "  -i                   Interpret <WIN> as a numerical window ID.\n" \
 "  -p                   Include PIDs in the window list. Very few\n" \
 "                       X applications support this feature.\n" \
+"  -G                   Include geometry in the window list.\n" \
 "  -u                   Override auto-detection and force UTF-8 mode.\n" \
 "  -F                   Modifies the behavior of the window title matching\n" \
 "                       algorithm. It will match only the full window title\n" \
@@ -99,7 +100,7 @@ Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 "                       and the string may appear in any position\n" \
 "                       of the title.\n" \
 "\n" \
-"                       The -t option may be used to interpret the argument\n" \
+"                       The -i option may be used to interpret the argument\n" \
 "                       as a numerical window ID represented as a decimal\n" \
 "                       number. If it starts with \"0x\", then\n" \
 "                       it will be interpreted as a hexadecimal number.\n" \
@@ -208,6 +209,7 @@ static struct {
     int verbose;
     int force_utf8;
     int show_pid;
+    int show_geometry;
     int match_by_id;
     int full_window_title_match;
     int wa_desktop_titles_invalid_utf8;
@@ -242,11 +244,14 @@ int main (int argc, char **argv) { /* {{{ */
         }
     }
    
-    while ((opt = getopt(argc, argv, "FVvhlupidma:r:s:c:t:w:k:o:n:g:e:b:N:I:T:R:")) != -1) {
+    while ((opt = getopt(argc, argv, "FGVvhlupidma:r:s:c:t:w:k:o:n:g:e:b:N:I:T:R:")) != -1) {
         missing_option = 0;
         switch (opt) {
             case 'F':
                 options.full_window_title_match = 1;
+                break;
+            case 'G':
+                options.show_geometry = 1;
                 break;
             case 'i':
                 options.match_by_id = 1;
@@ -911,7 +916,7 @@ static int action_window_str (Display *disp, char mode) {/*{{{*/
                 gchar *match;
                 gchar *match_cf;
                 if (envir_utf8) {
-                    match = options.param_window;
+                    match = g_strdup(options.param_window);
                     match_cf = g_utf8_casefold(options.param_window, -1);
                 }
                 else {
@@ -1240,6 +1245,9 @@ static int list_windows (Display *disp) {/*{{{*/
         gchar *client_machine;
         unsigned long *pid;
         unsigned long *desktop;
+        int x, y, junkx, junky;
+        unsigned int wwidth, wheight, bw, depth;
+        Window junkroot;
 
         /* desktop ID */
         if ((desktop = (unsigned long *)get_property(disp, client_list[i],
@@ -1255,26 +1263,28 @@ static int list_windows (Display *disp) {/*{{{*/
         /* pid */
         pid = (unsigned long *)get_property(disp, client_list[i],
                 XA_CARDINAL, "_NET_WM_PID", NULL);
+
+	/* geometry */
+        XGetGeometry (disp, client_list[i], &junkroot, &junkx, &junky,
+                          &wwidth, &wheight, &bw, &depth);
+        XTranslateCoordinates (disp, client_list[i], junkroot, junkx, junky,
+                               &x, &y, &junkroot);
       
         /* special desktop ID -1 means "all desktops", so we 
            have to convert the desktop value to signed long */
+        printf("0x%.8lx %-2ld", client_list[i], 
+                desktop ? (signed long)*desktop : 0);
         if (options.show_pid) {
-            printf("0x%.8lx %-2ld %-6lu %*s %s\n", client_list[i], 
-                    desktop ? (signed long)*desktop : 0,
-                    pid ? *pid : 0,
+            printf(" %-6lu", pid ? *pid : 0);
+	}
+        if (options.show_geometry) {
+	   printf(" %-4d %-4d %-4d %-4d", x, y, wwidth, wheight);
+	}
+        printf("%*s %s\n",
                     max_client_machine_len,
                     client_machine ? client_machine : "N/A",
                     title_out ? title_out : "N/A"
-            );
-        }
-        else {
-            printf("0x%.8lx %-2ld %*s %s\n", client_list[i], 
-                    desktop ? (signed long)*desktop : 0,
-                    max_client_machine_len,
-                    client_machine ? client_machine : "N/A",
-                    title_out ? title_out : "N/A"
-            );
-        }
+        );
         g_free(title_utf8);
         g_free(title_out);
         g_free(desktop);

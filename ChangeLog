@@ -1,4 +1,15 @@
 
+05 Jan 2004  Tomas Styblo  <tripie@cpan.org>
+  * Fixed some typos in --help
+  * 1.05 released
+
+05 Jan 2004  Russ Nelson <nelson@crynwr.com>
+  * New option (-G) - Include geometry in the window list.
+
+05 Jan 2004  Jonathan Hudson <jonathan@daria.co.uk>
+  * Fix for a segafult in UTF-8 mode. (action_window_str())
+
+
 03 Oct 2003  Tomas Styblo  <tripie@cpan.org>
   * 1.04 released
 
