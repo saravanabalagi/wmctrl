@@ -1,5 +1,13 @@
 
 03 Jan 2005  Tomas Styblo  <tripie@cpan.org>
+  * 1.07 released
+
+03 Jan 2005  Christopher Chan-Nui <channui@tiny.org>
+  * fixed a formatting bug that made the window list
+    unintelligible for desktop_ids == -1 or desktop_ids > 9
+
+
+03 Jan 2005  Tomas Styblo  <tripie@cpan.org>
   * 1.06 released
 
 03 Jan 2005  Christian V. J. Brüssow <cvjb@cvjb.de>

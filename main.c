@@ -1330,7 +1330,7 @@ static int list_windows (Display *disp) {/*{{{*/
       
         /* special desktop ID -1 means "all desktops", so we 
            have to convert the desktop value to signed long */
-        printf("0x%.8lx %-2ld", client_list[i], 
+        printf("0x%.8lx %2ld", client_list[i], 
                 desktop ? (signed long)*desktop : 0);
         if (options.show_pid) {
            printf(" %-6lu", pid ? *pid : 0);
@@ -1342,7 +1342,7 @@ static int list_windows (Display *disp) {/*{{{*/
 		   printf(" %-20s ", class_out ? class_out : "N/A");
 		}
 
-        printf("%*s %s\n",
+        printf(" %*s %s\n",
               max_client_machine_len,
               client_machine ? client_machine : "N/A",
               title_out ? title_out : "N/A"
