@@ -1,0 +1,94 @@
+##############################################################################
+#                                                                            #
+#   This is the Conservatory archive of the wmctrl, a Unix command-line      #
+#   tool to interact with an EWMH/NetWM-compatible X Window Manager.         #
+#                                                                            #
+#   wmctrl is free software (open source software), written by Tomas Styblo  #
+#   with contributions from others.  http://tripie.sweb.cz/utils/wmctrl/ is  #
+#   its home page.                                                           #
+#                                                                            #
+#   Because wmctrl does not appear to have any publicly accessible version   #
+#   control repository, we've created this Conservatory Git repository.      #
+#   We're not sure if Tomas Styblo or any of the other contributors are      #
+#   are currently accepting bug reports, but if you run into a bug you       #
+#   could try reporting it upstream and see what happens.  (As of this       #
+#   writing on 2018-09-08, the latest wmctrl release was in January 2005.)   #
+#                                                                            #
+#   About the Conservatory and its copy of wmctrl:                           #
+#   ----------------------------------------------                           #
+#                                                                            #
+#   The Conservatory (https://conservatory.github.io/) is a place where      #
+#   free software that has no other public version-controlled home on the    #
+#   Internet is made available in a git repository.  For wmctrl, we started  #
+#   from http://tripie.sweb.cz/utils/wmctrl/dist/wmctrl-1.07.tar.gz and      #
+#   then deduced the names of the previous releases.  We have committed      #
+#   each upstream release as one git revision, starting from 1.00, using     #
+#   https://github.com/Conservatory/conservatory.github.io/blob/master/\     #
+#   conservatory-import and the upstream ChangeLog to automate the process.  #
+#                                                                            #
+#   There are other version-controlled copies of wmctrl on the Internet.     #
+#   We found at least these two, and there may be others:                    #
+#                                                                            #
+#     * https://github.com/geekless/wmctrl                                   #
+#                                                                            #
+#       Adds -Y (iconify) and -S (sort in stacking order) options.           #
+#       Also backports some 64-bit-data fixes from a Debian patch.           #
+#                                                                            #
+#     * https://github.com/dancor/wmctrl                                     #
+#                                                                            #
+#       Adds -j (list current desktop), -z (lower window),                   #
+#       and some other interesting new options.                              #
+#                                                                            #
+#   Those two started from a top-skim of wmctrl 1.07, though, so they don't  #
+#   preserve the full upstream release history.  It'd be nice if someone     #
+#   were to clone this Conservatory copy and then re-port the enhancements   #
+#   from those other repositories to create a canonical new wmctrl release.  #
+#                                                                            #
+#   In the meantime, this README is the only file we've changed from what's  #
+#   in upstream, and the only change we made was to add this note.  Below    #
+#   is the original content of the README file.                              #
+#                                                                            #
+##############################################################################
+
+
+wmctrl
+A command line tool to interact with an EWMH/NetWM compatible X Window Manager.
+
+To compile and install the program, run the following commands:
+
+    ./configure
+    make
+    (become root)
+    make install
+
+
+After installation you may run "wmctrl -h" to view the documentation.
+
+The program is based on the EWMH specification:
+
+    http://www.freedesktop.org/standards/wm-spec/
+
+Please note that wmctrl only works with window managers which implement
+this specification. wmctrl is known to work at least with the following
+window managers:
+
+    icewm
+    kwin (the default WM from KDE)
+    metacity (the default WM from GNOME)
+    
+
+Author, current maintainer: Tomas Styblo <tripie@cpan.org>
+Copyright (C) 2003
+
+This program is free software which I release under the GNU General Public
+License. You may redistribute and/or modify this program under the terms
+of that license as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+To get a copy of the GNU General Puplic License,  write to the
+Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
