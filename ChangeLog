@@ -1,4 +1,15 @@
 
+03 Oct 2003  Tomas Styblo  <tripie@cpan.org>
+  * 1.04 released
+
+03 Oct 2003  Tomas Styblo  <tripie@cpan.org>
+  * added ability to change name and icon name of the window
+  * added ability to select the desired window by clicking on it 
+    (ala xprop or xwininfo)
+  * the -r <WIN> option was changed to -R <WIN>
+  * a few small bugfixes and code cleanups
+
+
 20 Sep 2003  Tomas Styblo  <tripie@cpan.org>
   * 1.03 released
 

@@ -32,6 +32,8 @@ Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include <locale.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+#include <X11/cursorfont.h>
+#include <X11/Xmu/WinUtil.h>
 #include <glib.h>
 
 #define _NET_WM_STATE_REMOVE        0    /* remove/unset property */
@@ -51,7 +53,7 @@ Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 "  -a <WIN>             Activate the window by switching to its desktop and\n" \
 "                       raising it.\n" \
 "  -c <WIN>             Close the window gracefully.\n" \
-"  -r <WIN>             Move the window to the current desktop and\n" \
+"  -R <WIN>             Move the window to the current desktop and\n" \
 "                       activate it.\n" \
 "  -r <WIN> -t <DESK>   Move the window to the specified desktop.\n" \
 "  -r <WIN> -e <MVARG>  Resize and move the window around the desktop.\n" \
@@ -60,6 +62,9 @@ Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 "                       possible for example to make the window maximized,\n" \
 "                       minimized or fullscreen. The format of the <STARG>\n" \
 "                       argument and list of possible states is given below.\n" \
+"  -r <WIN> -N <STR>    Set the name (long title) of the window.\n" \
+"  -r <WIN> -I <STR>    Set the icon name (short title) of the window.\n" \
+"  -r <WIN> -T <STR>    Set both the name and the icon name of the window.\n" \
 "  -k (on|off)          Activate or deactivate window manager's\n" \
 "                       \"showing the desktop\" mode. Many window managers\n" \
 "                       do not implement this mode.\n" \
@@ -98,6 +103,10 @@ Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 "                       as a numerical window ID represented as a decimal\n" \
 "                       number. If it starts with \"0x\", then\n" \
 "                       it will be interpreted as a hexadecimal number.\n" \
+"\n" \
+"                       The special string \":SELECT:\" (without the quotes)\n" \
+"                       may be used to instruct wmctrl to let you select the\n" \
+"                       window by clicking on it.\n" \
 "\n" \
 "  <DESK>               A desktop number. Desktops are counted from zero.\n" \
 "\n" \
@@ -155,6 +164,7 @@ Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 /* }}} */
 
 #define MAX_PROPERTY_VALUE_LEN 4096
+#define SELECT_WINDOW_MAGIC ":SELECT:"
 
 #define p_verbose(...) if (options.verbose) { \
     fprintf(stderr, __VA_ARGS__); \
@@ -184,12 +194,14 @@ static int activate_window (Display *disp, Window win,
 static int close_window (Display *disp, Window win);
 static int longest_str (gchar **strv);
 static int window_to_desktop (Display *disp, Window win, int desktop);
+static void window_set_title (Display *disp, Window win, char *str, char mode);
 static gchar *get_window_title (Display *disp, Window win);
 static gchar *get_property (Display *disp, Window win, 
         Atom xa_prop_type, gchar *prop_name, unsigned long *size);
-static void init_charset();
+static void init_charset(void);
 static int window_move_resize (Display *disp, Window win, char *arg);
 static int window_state (Display *disp, Window win, char *arg);
+static Window Select_Window(Display *dpy);
 /*}}}*/
    
 static struct {
@@ -200,9 +212,6 @@ static struct {
     int full_window_title_match;
     int wa_desktop_titles_invalid_utf8;
     char *param_window;
-    char *param_desktop;
-    char *param_move_resize;
-    char *param_state;
     char *param;
 } options;
 
@@ -233,7 +242,7 @@ int main (int argc, char **argv) { /* {{{ */
         }
     }
    
-    while ((opt = getopt(argc, argv, "FVvhlupidma:r:s:c:t:w:k:o:n:g:e:b:")) != -1) {
+    while ((opt = getopt(argc, argv, "FVvhlupidma:r:s:c:t:w:k:o:n:g:e:b:N:I:T:R:")) != -1) {
         missing_option = 0;
         switch (opt) {
             case 'F':
@@ -251,21 +260,19 @@ int main (int argc, char **argv) { /* {{{ */
             case 'p':
                 options.show_pid = 1;
                 break;
-            case 'a': case 'r': case 'c':
+            case 'a': case 'c': case 'R':
                 options.param_window = optarg;
                 action = opt;
                 break;
-            case 't':
-                options.param_desktop = optarg;
-                break;
-            case 'e':
-                options.param_move_resize = optarg;
-                break;
-            case 'b':
-                options.param_state = optarg;
+            case 'r':
+                options.param_window = optarg;
+                break; 
+            case 't': case 'e': case 'b': case 'N': case 'I': case 'T':
+                options.param = optarg;
+                action = opt;
                 break;
             case 's':
-                options.param_desktop = optarg;
+                options.param = optarg;
                 action = opt;
                 break;
             case 'w':
@@ -319,7 +326,12 @@ int main (int argc, char **argv) { /* {{{ */
         case 'm':
             ret = wm_info(disp);
             break;
-        case 'a': case 'r': case 'c':
+        case 'a': case 'c': case 'R': 
+        case 't': case 'e': case 'b': case 'N': case 'I': case 'T':
+            if (! options.param_window) {
+                fputs("No window was specified.\n", stderr);
+                return EXIT_FAILURE;
+            }
             if (options.match_by_id) {
                 ret = action_window_pid(disp, action);
             }
@@ -346,7 +358,7 @@ int main (int argc, char **argv) { /* {{{ */
 }
 /* }}} */
 
-static void init_charset () {/*{{{*/
+static void init_charset (void) {/*{{{*/
     const gchar *charset; /* unused */
     gchar *lang = getenv("LANG") ? g_ascii_strup(getenv("LANG"), -1) : NULL; 
     gchar *lc_ctype = getenv("LC_CTYPE") ? g_ascii_strup(getenv("LC_CTYPE"), -1) : NULL;
@@ -561,7 +573,7 @@ static int change_number_of_desktops (Display *disp) {/*{{{*/
 static int switch_desktop (Display *disp) {/*{{{*/
     int target = -1;
     
-    target = atoi(options.param_desktop); 
+    target = atoi(options.param); 
     if (target == -1) {
         fputs("Invalid desktop ID.\n", stderr);
         return EXIT_FAILURE;
@@ -569,6 +581,55 @@ static int switch_desktop (Display *disp) {/*{{{*/
     
     return client_msg(disp, DefaultRootWindow(disp), "_NET_CURRENT_DESKTOP", 
             (unsigned long)target, 0, 0, 0, 0);
+}/*}}}*/
+
+static void window_set_title (Display *disp, Window win, /* {{{ */
+        char *title, char mode) {
+    gchar *title_utf8;
+    gchar *title_local;
+
+    if (envir_utf8) {
+        title_utf8 = g_strdup(title);
+        title_local = NULL;
+    }
+    else {
+        if (! (title_utf8 = g_locale_to_utf8(title, -1, NULL, NULL, NULL))) {
+            title_utf8 = g_strdup(title);
+        }
+        title_local = g_strdup(title);
+    }
+    
+    if (mode == 'T' || mode == 'N') {
+        /* set name */
+        if (title_local) {
+            XChangeProperty(disp, win, XA_WM_NAME, XA_STRING, 8, PropModeReplace,
+                    title_local, strlen(title_local));
+        }
+        else {
+            XDeleteProperty(disp, win, XA_WM_NAME);
+        }
+        XChangeProperty(disp, win, XInternAtom(disp, "_NET_WM_NAME", False), 
+                XInternAtom(disp, "UTF8_STRING", False), 8, PropModeReplace,
+                title_utf8, strlen(title_utf8));
+    }
+
+    if (mode == 'T' || mode == 'I') {
+        /* set icon name */
+        if (title_local) {
+            XChangeProperty(disp, win, XA_WM_ICON_NAME, XA_STRING, 8, PropModeReplace,
+                    title_local, strlen(title_local));
+        }
+        else {
+            XDeleteProperty(disp, win, XA_WM_ICON_NAME);
+        }
+        XChangeProperty(disp, win, XInternAtom(disp, "_NET_WM_ICON_NAME", False), 
+                XInternAtom(disp, "UTF8_STRING", False), 8, PropModeReplace,
+                title_utf8, strlen(title_utf8));
+    }
+    
+    g_free(title_utf8);
+    g_free(title_local);
+    
 }/*}}}*/
 
 static int window_to_desktop (Display *disp, Window win, int desktop) {/*{{{*/
@@ -770,26 +831,26 @@ static int window_move_resize (Display *disp, Window win, char *arg) {/*{{{*/
 
 static int action_window (Display *disp, Window win, char mode) {/*{{{*/
     p_verbose("Using window: 0x%.8lx\n", win);
-    if (mode == 'a') {
-        return activate_window(disp, win, TRUE);
-    }
-    else if (mode == 'c') {
-        return close_window(disp, win);
-    }
-    else {
-        if (options.param_move_resize) {
+    switch (mode) {
+        case 'a':
+            return activate_window(disp, win, TRUE);
+
+        case 'c':
+            return close_window(disp, win);
+
+        case 'e':
             /* resize/move the window around the desktop => -r -e */
-            return window_move_resize(disp, win, options.param_move_resize);
-        }
-        else if (options.param_state) {
+            return window_move_resize(disp, win, options.param);
+
+        case 'b':
             /* change state of a window => -r -b */
-            return window_state(disp, win, options.param_state);
-        }
-        else if (options.param_desktop) {
+            return window_state(disp, win, options.param);
+        
+        case 't':
             /* move the window to the specified desktop => -r -t */
-            return window_to_desktop(disp, win, atoi(options.param_desktop));
-        }
-        else {
+            return window_to_desktop(disp, win, atoi(options.param));
+        
+        case 'R':
             /* move the window to the current desktop and activate it => -r */
             if (window_to_desktop(disp, win, -1) == EXIT_SUCCESS) {
                 usleep(100000); /* 100 ms - make sure the WM has enough
@@ -799,7 +860,14 @@ static int action_window (Display *disp, Window win, char mode) {/*{{{*/
             else {
                 return EXIT_FAILURE;
             }
-        }
+
+        case 'N': case 'I': case 'T':
+            window_set_title(disp, win, options.param, mode);
+            return EXIT_SUCCESS;
+
+        default:
+            fprintf(stderr, "Unknown action: '%c'\n", mode);
+            return EXIT_FAILURE;
     }
 }/*}}}*/
 
@@ -822,55 +890,66 @@ static int action_window_str (Display *disp, char mode) {/*{{{*/
     unsigned long client_list_size;
     int i;
     
-    if ((client_list = get_client_list(disp, &client_list_size)) == NULL) {
-        return EXIT_FAILURE; 
+    if (strcmp(SELECT_WINDOW_MAGIC, options.param_window) == 0) {
+        activate = Select_Window(disp);
+        if (activate) {
+            return action_window(disp, activate, mode);
+        }
+        else {
+            return EXIT_FAILURE;
+        }
     }
-    
-    for (i = 0; i < client_list_size / 4; i++) {
-        gchar *title_utf8 = get_window_title(disp, client_list[i]); /* UTF8 */
-        gchar *title_utf8_cf = NULL;
-        if (title_utf8) {
-            gchar *match;
-            gchar *match_cf;
-            if (envir_utf8) {
-                match = options.param_window;
-                match_cf = g_utf8_casefold(options.param_window, -1);
-            }
-            else {
-                if (! (match = g_locale_to_utf8(options.param_window, -1, NULL, NULL, NULL))) {
-                    match = g_strdup(options.param_window);
+    else {
+        if ((client_list = get_client_list(disp, &client_list_size)) == NULL) {
+            return EXIT_FAILURE; 
+        }
+        
+        for (i = 0; i < client_list_size / 4; i++) {
+            gchar *title_utf8 = get_window_title(disp, client_list[i]); /* UTF8 */
+            gchar *title_utf8_cf = NULL;
+            if (title_utf8) {
+                gchar *match;
+                gchar *match_cf;
+                if (envir_utf8) {
+                    match = options.param_window;
+                    match_cf = g_utf8_casefold(options.param_window, -1);
                 }
-                match_cf = g_utf8_casefold(match, -1);
-            }
-            
-            if (!match || !match_cf) {
-                continue;
-            }
+                else {
+                    if (! (match = g_locale_to_utf8(options.param_window, -1, NULL, NULL, NULL))) {
+                        match = g_strdup(options.param_window);
+                    }
+                    match_cf = g_utf8_casefold(match, -1);
+                }
+                
+                if (!match || !match_cf) {
+                    continue;
+                }
 
-            title_utf8_cf = g_utf8_casefold(title_utf8, -1);
+                title_utf8_cf = g_utf8_casefold(title_utf8, -1);
 
-            if ((options.full_window_title_match && strcmp(title_utf8, match) == 0) ||
-                    (!options.full_window_title_match && strstr(title_utf8_cf, match_cf))) {
-                activate = client_list[i];
+                if ((options.full_window_title_match && strcmp(title_utf8, match) == 0) ||
+                        (!options.full_window_title_match && strstr(title_utf8_cf, match_cf))) {
+                    activate = client_list[i];
+                    g_free(match);
+                    g_free(match_cf);
+                    g_free(title_utf8);
+                    g_free(title_utf8_cf);
+                    break;
+                }
                 g_free(match);
                 g_free(match_cf);
                 g_free(title_utf8);
                 g_free(title_utf8_cf);
-                break;
             }
-            g_free(match);
-            g_free(match_cf);
-            g_free(title_utf8);
-            g_free(title_utf8_cf);
         }
-    }
-    g_free(client_list);
+        g_free(client_list);
 
-    if (activate) {
-        return action_window(disp, activate, mode);
-    }
-    else {
-        return EXIT_FAILURE;
+        if (activate) {
+            return action_window(disp, activate, mode);
+        }
+        else {
+            return EXIT_FAILURE;
+        }
     }
 }/*}}}*/
 
@@ -1273,3 +1352,60 @@ static gchar *get_property (Display *disp, Window win, /*{{{*/
     XFree(ret_prop);
     return ret;
 }/*}}}*/
+
+static Window Select_Window(Display *dpy) {/*{{{*/
+    /*
+     * Routine to let user select a window using the mouse
+     * Taken from xfree86.
+     */
+
+    int status;
+    Cursor cursor;
+    XEvent event;
+    Window target_win = None, root = DefaultRootWindow(dpy);
+    int buttons = 0;
+    int dummyi;
+    unsigned int dummy;
+
+    /* Make the target cursor */
+    cursor = XCreateFontCursor(dpy, XC_crosshair);
+
+    /* Grab the pointer using target cursor, letting it room all over */
+    status = XGrabPointer(dpy, root, False,
+            ButtonPressMask|ButtonReleaseMask, GrabModeSync,
+            GrabModeAsync, root, cursor, CurrentTime);
+    if (status != GrabSuccess) {
+        fputs("ERROR: Cannot grab mouse.\n", stderr);
+        return 0;
+    }
+
+    /* Let the user select a window... */
+    while ((target_win == None) || (buttons != 0)) {
+        /* allow one more event */
+        XAllowEvents(dpy, SyncPointer, CurrentTime);
+        XWindowEvent(dpy, root, ButtonPressMask|ButtonReleaseMask, &event);
+        switch (event.type) {
+            case ButtonPress:
+                if (target_win == None) {
+                    target_win = event.xbutton.subwindow; /* window selected */
+                    if (target_win == None) target_win = root;
+                }
+                buttons++;
+                break;
+            case ButtonRelease:
+                if (buttons > 0) /* there may have been some down before we started */
+                    buttons--;
+                break;
+        }
+    } 
+
+    XUngrabPointer(dpy, CurrentTime);      /* Done with pointer */
+
+    if (XGetGeometry (dpy, target_win, &root, &dummyi, &dummyi,
+                &dummy, &dummy, &dummy, &dummy) && target_win != root) {
+        target_win = XmuClientWindow (dpy, target_win);
+    }
+    
+    return(target_win);
+}/*}}}*/
+
