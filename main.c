@@ -81,6 +81,7 @@ Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 "  -h                   Print help.\n" \
 "\n" \
 "Options:\n" \
+"  -S                   List windows in stacking order (bottom to top).\n" \
 "  -i                   Interpret <WIN> as a numerical window ID.\n" \
 "  -p                   Include PIDs in the window list. Very few\n" \
 "                       X applications support this feature.\n" \
@@ -232,6 +233,7 @@ static struct {
     int show_class;
     int show_pid;
     int show_geometry;
+    int stacking_order;
     int match_by_id;
 	int match_by_cls;
     int full_window_title_match;
@@ -267,11 +269,14 @@ int main (int argc, char **argv) { /* {{{ */
         }
     }
    
-    while ((opt = getopt(argc, argv, "FGVvhlupidjmxa:r:s:c:t:w:k:o:n:g:e:y:b:z:E:N:I:T:R:")) != -1) {
+    while ((opt = getopt(argc, argv, "FGVvhSlupidjmxa:r:s:c:t:w:k:o:n:g:e:y:b:z:E:N:I:T:R:")) != -1) {
         missing_option = 0;
         switch (opt) {
             case 'F':
                 options.full_window_title_match = 1;
+                break;
+            case 'S':
+                options.stacking_order = 1;
                 break;
             case 'G':
                 options.show_geometry = 1;
@@ -1304,18 +1309,27 @@ static int longest_str (gchar **strv) {/*{{{*/
 }/*}}}*/
 
 static Window *get_client_list (Display *disp, unsigned long *size) {/*{{{*/
-    Window *client_list;
+    Window *client_list = NULL;
+    char * msg = NULL;
 
-    if ((client_list = (Window *)get_property(disp, DefaultRootWindow(disp), 
-                    XA_WINDOW, "_NET_CLIENT_LIST", size)) == NULL) {
-        if ((client_list = (Window *)get_property(disp, DefaultRootWindow(disp), 
-                        XA_CARDINAL, "_WIN_CLIENT_LIST", size)) == NULL) {
-            fputs("Cannot get client list properties. \n"
-                  "(_NET_CLIENT_LIST or _WIN_CLIENT_LIST)"
-                  "\n", stderr);
-            return NULL;
-        }
+    if (options.stacking_order)
+    {
+        msg = "_NET_CLIENT_LIST_STACKING";
+        client_list = (Window *) get_property(disp, DefaultRootWindow(disp), 
+            XA_WINDOW, "_NET_CLIENT_LIST_STACKING", size);
     }
+    else
+    {
+        msg = "_NET_CLIENT_LIST or _WIN_CLIENT_LIST";
+        client_list = (Window *)get_property(disp, DefaultRootWindow(disp), 
+            XA_WINDOW, "_NET_CLIENT_LIST", size);
+        if (!client_list)
+            client_list = (Window *)get_property(disp, DefaultRootWindow(disp), 
+                XA_CARDINAL, "_WIN_CLIENT_LIST", size);
+    }
+
+    if (!client_list)
+        fprintf(stderr, "Cannot get client list properties.\n(%s)\n", msg);
 
     return client_list;
 }/*}}}*/
