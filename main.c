@@ -745,6 +745,33 @@ static int close_window (Display *disp, Window win) {/*{{{*/
             0, 0, 0, 0, 0);
 }/*}}}*/
 
+static gchar * normalize_wm_state_name(const char * name)
+{
+    char * short_names[] = {
+        "modal", "sticky", "maximized_vert", "maximized_horz",
+        "shaded", "skip_taskbar", "skip_pager", "hidden",
+        "fullscreen", "above", "below", 0};
+
+    int i;
+    for (i = 0; short_names[i]; i++)
+    {
+        if (strcmp(short_names[i], name) == 0)
+        {
+            gchar * upcase = g_ascii_strup(name, -1);
+            gchar * result = g_strdup_printf("_NET_WM_STATE_%s", upcase);
+            g_free(upcase);
+            return result;
+        }
+    }
+
+    if (strcmp("undecorated", name) == 0)
+    {
+        return g_strdup("_OB_WM_STATE_UNDECORATED");
+    }
+
+    return g_strdup(name);
+}
+
 static int window_state (Display *disp, Window win, char *arg) {/*{{{*/
     unsigned long action;
     Atom prop1 = 0;
@@ -758,8 +785,8 @@ static int window_state (Display *disp, Window win, char *arg) {/*{{{*/
     }
 
     if ((p1 = strchr(arg, ','))) {
-        gchar *tmp_prop1, *tmp1;
-        
+        gchar *tmp_prop1;
+
         *p1 = '\0';
 
         /* action */
@@ -780,17 +807,16 @@ static int window_state (Display *disp, Window win, char *arg) {/*{{{*/
 
         /* the second property */
         if ((p2 = strchr(p1, ','))) {
-            gchar *tmp_prop2, *tmp2;
+            gchar *tmp_prop2;
             *p2 = '\0';
             p2++;
             if (strlen(p2) == 0) {
                 fputs("Invalid zero length property.\n", stderr);
                 return EXIT_FAILURE;
             }
-            tmp_prop2 = g_strdup_printf("_NET_WM_STATE_%s", tmp2 = g_ascii_strup(p2, -1));
+            tmp_prop2 = normalize_wm_state_name(p2);
             p_verbose("State 2: %s\n", tmp_prop2); 
             prop2 = XInternAtom(disp, tmp_prop2, False);
-            g_free(tmp2);
             g_free(tmp_prop2);
         }
 
@@ -799,13 +825,11 @@ static int window_state (Display *disp, Window win, char *arg) {/*{{{*/
             fputs("Invalid zero length property.\n", stderr);
             return EXIT_FAILURE;
         }
-        tmp_prop1 = g_strdup_printf("_NET_WM_STATE_%s", tmp1 = g_ascii_strup(p1, -1));
+        tmp_prop1 = normalize_wm_state_name(p1);
         p_verbose("State 1: %s\n", tmp_prop1); 
         prop1 = XInternAtom(disp, tmp_prop1, False);
-        g_free(tmp1);
         g_free(tmp_prop1);
 
-        
         return client_msg(disp, win, "_NET_WM_STATE", 
             action, (unsigned long)prop1, (unsigned long)prop2, 0, 0);
     }
