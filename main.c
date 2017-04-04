@@ -113,7 +113,7 @@ Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 "\n" \
 "                       The -x option may be used to interpret the argument\n" \
 "                       as a string, which is matched against the window's\n" \
-"                       class name (WM_CLASS property). Th first matching\n" \
+"                       class name (WM_CLASS property). The first matching\n" \
 "                       window is used. The matching isn't case sensitive\n" \
 "                       and the string may appear in any position\n" \
 "                       of the class name. So it's recommended to  always use\n" \
