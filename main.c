@@ -661,28 +661,28 @@ static void window_set_title (Display *disp, Window win, /* {{{ */
     /* set name */
     if (title_local) {
       XChangeProperty(disp, win, XA_WM_NAME, XA_STRING, 8, PropModeReplace,
-          title_local, strlen(title_local));
+          (guchar *) title_local, strlen(title_local));
     }
     else {
       XDeleteProperty(disp, win, XA_WM_NAME);
     }
     XChangeProperty(disp, win, XInternAtom(disp, "_NET_WM_NAME", False), 
         XInternAtom(disp, "UTF8_STRING", False), 8, PropModeReplace,
-        title_utf8, strlen(title_utf8));
+        (guchar *) title_utf8, strlen(title_utf8));
   }
 
   if (mode == 'T' || mode == 'I') {
     /* set icon name */
     if (title_local) {
       XChangeProperty(disp, win, XA_WM_ICON_NAME, XA_STRING, 8, PropModeReplace,
-          title_local, strlen(title_local));
+          (guchar *) title_local, strlen(title_local));
     }
     else {
       XDeleteProperty(disp, win, XA_WM_ICON_NAME);
     }
     XChangeProperty(disp, win, XInternAtom(disp, "_NET_WM_ICON_NAME", False), 
         XInternAtom(disp, "UTF8_STRING", False), 8, PropModeReplace,
-        title_utf8, strlen(title_utf8));
+        (guchar *) title_utf8, strlen(title_utf8));
   }
 
   g_free(title_utf8);
@@ -1094,7 +1094,7 @@ static int list_current_desktop (Display *disp) {/*{{{*/
             return EXIT_FAILURE;
         }
     }
-    printf("%-2d\n", *cur_desktop);
+    printf("%-2d\n", *((int *) cur_desktop));
     return EXIT_SUCCESS;
 }
 
