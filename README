@@ -1,21 +1,33 @@
 ##############################################################################
 #                                                                            #
-#   This is the Conservatory archive of the wmctrl, a Unix command-line      #
-#   tool to interact with an EWMH/NetWM-compatible X Window Manager.         #
+#   wmctrl is free software (open source software), a Unix command-line      #
+#   tool for interacting with an EWMH/NetWM-compatible X Window Manager.     #
 #                                                                            #
-#   wmctrl is free software (open source software), written by Tomas Styblo  #
-#   with contributions from others.  http://tripie.sweb.cz/utils/wmctrl/ is  #
-#   its home page.                                                           #
+#   wmctrl was originally written by Tomas Styblo with contributions from    #
+#   from others.  Its home page is http://tripie.sweb.cz/utils/wmctrl/.      #
+#                                                                            #
+#   The version here is enhanced with various changes that people around     #
+#   the Net had added in their own divergent versions.  This version is      #
+#   meant to gather all of those improvements together in one place.         #
+#   It also contains the full release history of wmctrl (one commit          #
+#   per release) because it starts from the Conservatory archive at          #
+#   https://github.com/Conservatory/wmctrl.  The relevant part of the        #
+#   Conservatory's README is below, lightly edited.                          #
+#                                                                            #
+#   =====================================================================    #
 #                                                                            #
 #   Because wmctrl does not appear to have any publicly accessible version   #
-#   control repository, we've created this Conservatory Git repository.      #
-#   We're not sure if Tomas Styblo or any of the other contributors are      #
-#   are currently accepting bug reports, but if you run into a bug you       #
-#   could try reporting it upstream and see what happens.  (As of this       #
-#   writing on 2018-09-08, the latest wmctrl release was in January 2005.)   #
+#   control repository, we created a Conservatory Git repository for it.     #
+#   We don't know if Tomas Styblo still accepts bug reports for wmctrl,      #
+#   but if you run into a bug you could try reporting it to him and see      #
+#   what happens.  (As of this writing on 2018-09-09, the latest official    #
+#   wmctrl release was 1.07 in January 2005.)  Please also feel free to      #
+#   file bugs here.  Although I don't consider this copy of wmctrl to be     #
+#   "official" and I'm certainly not committing to maintain it, I'll merge   #
+#   easy fixes or enhancements if they don't take too much time to review.   #
 #                                                                            #
-#   About the Conservatory and its copy of wmctrl:                           #
-#   ----------------------------------------------                           #
+#   About the Conservatory copy of wmctrl that this started from:            #
+#   -------------------------------------------------------------            #
 #                                                                            #
 #   The Conservatory (https://conservatory.github.io/) is a place where      #
 #   free software that has no other public version-controlled home on the    #
@@ -39,14 +51,10 @@
 #       Adds -j (list current desktop), -z (lower window),                   #
 #       and some other interesting new options.                              #
 #                                                                            #
-#   Those two started from a top-skim of wmctrl 1.07, though, so they don't  #
-#   preserve the full upstream release history.  It'd be nice if someone     #
-#   were to clone this Conservatory copy and then re-port the enhancements   #
-#   from those other repositories to create a canonical new wmctrl release.  #
-#                                                                            #
-#   In the meantime, this README is the only file we've changed from what's  #
-#   in upstream, and the only change we made was to add this note.  Below    #
-#   is the original content of the README file.                              #
+#   Those two started from a top-skim of wmctrl 1.07, though, so they        #
+#   didn't preserve the full upstream release history.  Later @kfogel        #
+#   cloned the Conservatory copy and then merged those enhancements into     #
+#   his copy.  Below is the original content of the upstream README file.    #
 #                                                                            #
 ##############################################################################
 
