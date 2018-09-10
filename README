@@ -6,55 +6,33 @@
 #   wmctrl was originally written by Tomas Styblo with contributions from    #
 #   from others.  Its home page is http://tripie.sweb.cz/utils/wmctrl/.      #
 #                                                                            #
-#   The version here is enhanced with various changes that people around     #
-#   the Net had added in their own divergent versions.  This version is      #
-#   meant to gather all of those improvements together in one place.         #
-#   It also contains the full release history of wmctrl (one commit          #
-#   per release) because it starts from the Conservatory archive at          #
-#   https://github.com/Conservatory/wmctrl.  The relevant part of the        #
-#   Conservatory's README is below, lightly edited.                          #
+#   The version here contains various enhancements that people around the    #
+#   Net had added in their own divergent versions.  The two main sources     #
+#   of these enhancements were https://github.com/dancor/wmctrl and          #
+#   https://github.com/geekless/wmctrl.  The additions include these         #
+#   new command-line options/actions:                                        #
 #                                                                            #
-#   =====================================================================    #
+#     -Y: iconify (Vadim Ushakov)                                            #
+#     -S: sort window list in stacking order (Vadim Ushakov)                 #
+#     -j: list current desktop (Kevin Der)                                   #
+#     -r -y: like -e but reactivate after the move (Chris Piro )             #
+#     -E: get-title (Dan Corson)                                             #
+#     -z: lower window (Dan Corson)                                          #
 #                                                                            #
-#   Because wmctrl does not appear to have any publicly accessible version   #
-#   control repository, we created a Conservatory Git repository for it.     #
-#   We don't know if Tomas Styblo still accepts bug reports for wmctrl,      #
-#   but if you run into a bug you could try reporting it to him and see      #
-#   what happens.  (As of this writing on 2018-09-09, the latest official    #
-#   wmctrl release was 1.07 in January 2005.)  Please also feel free to      #
-#   file bugs here.  Although I don't consider this copy of wmctrl to be     #
-#   "official" and I'm certainly not committing to maintain it, I'll merge   #
-#   easy fixes or enhancements if they don't take too much time to review.   #
+#   Other improvements are a typo fix for the --help output, and some        #
+#   fixes for build-time compiler warnings.                                  #
 #                                                                            #
-#   About the Conservatory copy of wmctrl that this started from:            #
-#   -------------------------------------------------------------            #
+#   This repository also contains the full release history of wmctrl (one    #
+#   commit per release), because it is based on the Conservatory archive     #
+#   at https://github.com/Conservatory/wmctrl.                               #
 #                                                                            #
-#   The Conservatory (https://conservatory.github.io/) is a place where      #
-#   free software that has no other public version-controlled home on the    #
-#   Internet is made available in a git repository.  For wmctrl, we started  #
-#   from http://tripie.sweb.cz/utils/wmctrl/dist/wmctrl-1.07.tar.gz and      #
-#   then deduced the names of the previous releases.  We have committed      #
-#   each upstream release as one git revision, starting from 1.00, using     #
-#   https://github.com/Conservatory/conservatory.github.io/blob/master/\     #
-#   conservatory-import and the upstream ChangeLog to automate the process.  #
+#   I don't know if Tomas Styblo still accepts bug reports for wmctrl, as    #
+#   the last version he released was 1.07 in January 2005.  Please feel to   #
+#   file bug reports and enhancements here.  Although I don't consider this  #
+#   copy to be "official", and can't commit to putting in much effort as     #
+#   a maintainer, I'll try to review and merge easy fixes and enhancements.  #
 #                                                                            #
-#   There are other version-controlled copies of wmctrl on the Internet.     #
-#   We found at least these two, and there may be others:                    #
-#                                                                            #
-#     * https://github.com/geekless/wmctrl                                   #
-#                                                                            #
-#       Adds -Y (iconify) and -S (sort in stacking order) options.           #
-#       Also backports some 64-bit-data fixes from a Debian patch.           #
-#                                                                            #
-#     * https://github.com/dancor/wmctrl                                     #
-#                                                                            #
-#       Adds -j (list current desktop), -z (lower window),                   #
-#       and some other interesting new options.                              #
-#                                                                            #
-#   Those two started from a top-skim of wmctrl 1.07, though, so they        #
-#   didn't preserve the full upstream release history.  Later @kfogel        #
-#   cloned the Conservatory copy and then merged those enhancements into     #
-#   his copy.  Below is the original content of the upstream README file.    #
+#   Below is the original content of the upstream 1.07 README.               #
 #                                                                            #
 ##############################################################################
 
