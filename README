@@ -1,3 +1,41 @@
+##############################################################################
+#                                                                            #
+#   wmctrl is free software (open source software), a Unix command-line      #
+#   tool for interacting with an EWMH/NetWM-compatible X Window Manager.     #
+#                                                                            #
+#   wmctrl was originally written by Tomas Styblo with contributions from    #
+#   from others.  Its home page is http://tripie.sweb.cz/utils/wmctrl/.      #
+#                                                                            #
+#   The version here contains various enhancements that people around the    #
+#   Net had added in their own divergent versions.  The two main sources     #
+#   of these enhancements were https://github.com/dancor/wmctrl and          #
+#   https://github.com/geekless/wmctrl.  The additions include these         #
+#   new command-line options/actions:                                        #
+#                                                                            #
+#     -Y: iconify (Vadim Ushakov)                                            #
+#     -S: sort window list in stacking order (Vadim Ushakov)                 #
+#     -j: list current desktop (Kevin Der)                                   #
+#     -r -y: like -e but reactivate after the move (Chris Piro )             #
+#     -E: get-title (Dan Corson)                                             #
+#     -z: lower window (Dan Corson)                                          #
+#                                                                            #
+#   Other improvements are a typo fix for the --help output, and some        #
+#   fixes for build-time compiler warnings.                                  #
+#                                                                            #
+#   This repository also contains the full release history of wmctrl (one    #
+#   commit per release), because it is based on the Conservatory archive     #
+#   at https://github.com/Conservatory/wmctrl.                               #
+#                                                                            #
+#   I don't know if Tomas Styblo still accepts bug reports for wmctrl, as    #
+#   the last version he released was 1.07 in January 2005.  Please feel to   #
+#   file bug reports and enhancements here.  Although I don't consider this  #
+#   copy to be "official", and can't commit to putting in much effort as     #
+#   a maintainer, I'll try to review and merge easy fixes and enhancements.  #
+#                                                                            #
+#   Below is the original content of the upstream 1.07 README.               #
+#                                                                            #
+##############################################################################
+
 
 wmctrl
 A command line tool to interact with an EWMH/NetWM compatible X Window Manager.
@@ -26,7 +64,7 @@ The homepage of wmctrl:
     http://sweb.cz/tripie/utils/wmctrl/
 
 
-I recommend you to check out Zenity, which is an excellent 
+I recommend you to check out Zenity, which is an excellent
 tool to integrate the GUI and the command line.
 
     http://ftp.acc.umu.se/pub/GNOME/sources/zenity/
