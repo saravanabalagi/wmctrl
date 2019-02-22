@@ -565,6 +565,13 @@ static int wm_info (Display *disp) {/*{{{*/
 
 static int showing_desktop (Display *disp) {/*{{{*/
   unsigned long state;
+  unsigned long *showing_desktop = NULL;
+
+  /* _NET_SHOWING_DESKTOP */
+  if (! (showing_desktop = (unsigned long *)get_property(disp, DefaultRootWindow(disp),
+          XA_CARDINAL, "_NET_SHOWING_DESKTOP", NULL))) {
+    p_verbose("Cannot get the _NET_SHOWING_DESKTOP property.\n");
+  }
 
   if (strcmp(options.param, "on") == 0) {
     state = 1;
@@ -572,8 +579,12 @@ static int showing_desktop (Display *disp) {/*{{{*/
   else if (strcmp(options.param, "off") == 0) {
     state = 0;
   }
+  else if (strcmp(options.param, "toggle") == 0) {
+    if(*showing_desktop == 0) { state = 1; }
+    if(*showing_desktop == 1) { state = 0; }
+  }
   else {
-    fputs("The argument to the -k option must be either \"on\" or \"off\"\n", stderr);
+    fputs("The argument to the -k option must be either \"on\" or \"off\" or \"toggle\"\n", stderr);
     return EXIT_FAILURE;
   }
 
