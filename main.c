@@ -68,7 +68,7 @@ Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 "  -r <WIN> -N <STR>    Set the name (long title) of the window.\n" \
 "  -r <WIN> -I <STR>    Set the icon name (short title) of the window.\n" \
 "  -r <WIN> -T <STR>    Set both the name and the icon name of the window.\n" \
-"  -k (on|off)          Activate or deactivate window manager's\n" \
+"  -k (on|off|toggle)   Activate or deactivate window manager's\n" \
 "                       \"showing the desktop\" mode. Many window managers\n" \
 "                       do not implement this mode.\n" \
 "  -o <X>,<Y>           Change the viewport for the current desktop.\n" \
