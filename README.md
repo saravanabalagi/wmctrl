@@ -15,7 +15,7 @@ After installation you may run "wmctrl -h" to view the documentation.
 
 ## Features Added:
 
-The version here contains various enhancements that people around the world (yes, including me!) had added in their own divergent versions. The additions include these new command-line options/actions:
+The version here contains various enhancements that people around the world (yes, including me 😉) had added in their own divergent versions. The additions include these new command-line options/actions:
 
 * -k toggle: Toggle show desktop
 * -Y: iconify (Vadim Ushakov)
