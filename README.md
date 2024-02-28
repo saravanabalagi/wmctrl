@@ -25,7 +25,7 @@ The version here contains various enhancements that people around the world (yes
 * -E: get-title (Dan Corson)
 * -z: lower window (Dan Corson)
 
-The program is based on the [EWMH specification](http://www.freedesktop.org/standards/wm-spec). Please note that wmctrl only works with window managers which implement
+The program is based on the [EWMH specification](https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html). Please note that wmctrl only works with window managers which implement
 this specification. You can find the docs for the original wmctrl [here](http://tripie.sweb.cz/utils/wmctrl/).
 
 ## Licence
